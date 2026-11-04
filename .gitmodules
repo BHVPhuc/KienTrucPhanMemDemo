@@ -1,0 +1,7 @@
+[submodule "04-micro-frontends-jamstack/micro-frontend-demo"]
+	path = 04-micro-frontends-jamstack/micro-frontend-demo
+	url = https://github.com/rautio/micro-frontend-demo.git
+
+[submodule "04-micro-frontends-jamstack/jamstack/ScriptHammer"]
+	path = 04-micro-frontends-jamstack/jamstack/ScriptHammer
+	url = https://github.com/TortoiseWolfe/ScriptHammer.git
