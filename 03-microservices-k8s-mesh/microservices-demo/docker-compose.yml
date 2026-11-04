@@ -1,0 +1,138 @@
+version: '3.8'
+
+services:
+  # 1. Redis Cache cho Giỏ hàng
+  redis-cart:
+    image: redis:alpine
+    container_name: redis-cart
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  # 2. Cart Service (C# .NET)
+  cartservice:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/cartservice:v0.10.7
+    container_name: cartservice
+    environment:
+      - REDIS_ADDR=redis-cart:6379
+      - PORT=7070
+    depends_on:
+      - redis-cart
+    restart: unless-stopped
+
+  # 3. Product Catalog Service (Go)
+  productcatalogservice:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/productcatalogservice:v0.10.7
+    container_name: productcatalogservice
+    environment:
+      - PORT=3550
+    restart: unless-stopped
+
+  # 4. Currency Service (Node.js)
+  currencyservice:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/currencyservice:v0.10.7
+    container_name: currencyservice
+    environment:
+      - PORT=7000
+    restart: unless-stopped
+
+  # 5. Payment Service (Node.js)
+  paymentservice:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/paymentservice:v0.10.7
+    container_name: paymentservice
+    environment:
+      - PORT=50051
+    restart: unless-stopped
+
+  # 6. Shipping Service (Go)
+  shippingservice:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/shippingservice:v0.10.7
+    container_name: shippingservice
+    environment:
+      - PORT=50051
+    restart: unless-stopped
+
+  # 7. Email Service (Python)
+  emailservice:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/emailservice:v0.10.7
+    container_name: emailservice
+    environment:
+      - PORT=8080
+    restart: unless-stopped
+
+  # 8. Checkout Service (Go - Điều phối đơn hàng)
+  checkoutservice:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/checkoutservice:v0.10.7
+    container_name: checkoutservice
+    environment:
+      - PORT=5050
+      - PRODUCT_CATALOG_SERVICE_ADDR=productcatalogservice:3550
+      - SHIPPING_SERVICE_ADDR=shippingservice:50051
+      - PAYMENT_SERVICE_ADDR=paymentservice:50051
+      - EMAIL_SERVICE_ADDR=emailservice:8080
+      - CURRENCY_SERVICE_ADDR=currencyservice:7000
+      - CART_SERVICE_ADDR=cartservice:7070
+    depends_on:
+      - productcatalogservice
+      - shippingservice
+      - paymentservice
+      - emailservice
+      - currencyservice
+      - cartservice
+    restart: unless-stopped
+
+  # 9. Recommendation Service (Python)
+  recommendationservice:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/recommendationservice:v0.10.7
+    container_name: recommendationservice
+    environment:
+      - PORT=8080
+      - PRODUCT_CATALOG_SERVICE_ADDR=productcatalogservice:3550
+    depends_on:
+      - productcatalogservice
+    restart: unless-stopped
+
+  # 10. Ad Service (Java)
+  adservice:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/adservice:v0.10.7
+    container_name: adservice
+    environment:
+      - PORT=9555
+    restart: unless-stopped
+
+  # 11. Frontend Service (Go - Cổng tiếp nhận Web)
+  frontend:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/frontend:v0.10.7
+    container_name: frontend
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - PRODUCT_CATALOG_SERVICE_ADDR=productcatalogservice:3550
+      - CURRENCY_SERVICE_ADDR=currencyservice:7000
+      - CART_SERVICE_ADDR=cartservice:7070
+      - RECOMMENDATION_SERVICE_ADDR=recommendationservice:8080
+      - SHIPPING_SERVICE_ADDR=shippingservice:50051
+      - CHECKOUT_SERVICE_ADDR=checkoutservice:5050
+      - AD_SERVICE_ADDR=adservice:9555
+    depends_on:
+      - productcatalogservice
+      - currencyservice
+      - cartservice
+      - recommendationservice
+      - shippingservice
+      - checkoutservice
+      - adservice
+    restart: unless-stopped
+
+  # 12. Load Generator (Python Locust - Tự động tạo tải)
+  loadgenerator:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/loadgenerator:v0.10.7
+    container_name: loadgenerator
+    environment:
+      - FRONTEND_ADDR=frontend:8080
+      - USERS=10
+    depends_on:
+      - frontend
+    restart: unless-stopped
+
