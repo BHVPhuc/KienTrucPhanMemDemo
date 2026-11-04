@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  rabbitmq-broker:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbitmq-broker
+    ports:
+      - "5672:5672"   # Giao thức AMQP
+      - "15672:15672" # Web Management Dashboard UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+volumes:
+  rabbitmq_data:

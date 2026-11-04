@@ -1,0 +1,29 @@
+# MULTI-STAGE DOCKERFILE CHO MICROSERVICES
+# Stage 1: Build & Cài đặt dependencies (Nặng, có compiler & tooling)
+FROM node:22-alpine AS builder
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+# Chỉ cài dependencies sản xuất và dọn dẹp cache
+RUN npm ci --only=production && npm cache clean --force
+
+COPY . .
+
+# Stage 2: Runtime tối giản (Minimal Production Environment)
+FROM node:22-alpine AS runner
+WORKDIR /usr/src/app
+
+ENV NODE_ENV=production
+
+# Tăng cường bảo mật: Tạo nhóm và người dùng không có quyền root (Non-root user)
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Chỉ copy những tệp thực sự cần thiết từ builder stage
+COPY --from=builder /usr/src/app ./
+
+USER appuser
+
+EXPOSE 3000
+
+# Khởi chạy ứng dụng
+CMD ["node", "index.js"]

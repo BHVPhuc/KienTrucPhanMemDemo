@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: payment-circuit-breaker
+spec:
+  host: payment-service
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100 # Giới hạn tối đa 100 kết nối TCP
+      http:
+        http1MaxPendingRequests: 10
+        maxRequestsPerConnection: 10
+    # Cấu hình Circuit Breaking: Tự động loại bỏ Pod lỗi ra khỏi cụm
+    outlierDetection:
+      consecutive5xxErrors: 3          # Nếu gặp 3 lỗi 5xx liên tiếp
+      interval: 10s                    # Quét mỗi 10 giây
+      baseEjectionTime: 30s            # Ngắt mạch và cô lập Pod đó trong 30 giây
+      maxEjectionPercent: 100          # Cho phép cô lập tối đa 100% các instance lỗi

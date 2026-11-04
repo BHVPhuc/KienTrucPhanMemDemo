@@ -1,0 +1,45 @@
+{
+  "title": "Microservices RED Metrics Dashboard (Rate, Errors, Duration)",
+  "uid": "microservices-red-01",
+  "schemaVersion": 38,
+  "refresh": "5s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "R - Request Rate (RPS per Service)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total[1m])) by (service)",
+          "legendFormat": "{{service}} RPS"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "E - Error Rate (HTTP 5xx % per Service)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(http_request_errors_total[1m])) by (service) / sum(rate(http_requests_total[1m])) by (service) * 100",
+          "legendFormat": "{{service}} Error %"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "D - Request Duration p95 & p99 (Latency ms)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_ms_bucket[1m])) by (le, service))",
+          "legendFormat": "{{service}} p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_ms_bucket[1m])) by (le, service))",
+          "legendFormat": "{{service}} p99"
+        }
+      ]
+    }
+  ]
+}

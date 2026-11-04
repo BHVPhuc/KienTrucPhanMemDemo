@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  # Thu thập chỉ số RED (Rate, Errors, Duration) từ Envoy Sidecar và Microservices
+  - job_name: 'microservices-red-metrics'
+    static_configs:
+      - targets:
+        - 'order-service:3000'
+        - 'catalog-service:3000'
+        - 'payment-service:3000'
+        - 'auth-service:3000'
+
+  # Thu thập chỉ số từ Envoy Proxy Mesh
+  - job_name: 'envoy-sidecar-mesh'
+    metrics_path: /stats/prometheus
+    static_configs:
+      - targets: ['localhost:15090']

@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # 1. Auth Service & Auth DB
+  auth-service:
+    build:
+      context: ../services/auth-service
+      dockerfile: ../../docker/Dockerfile.multistage
+    ports:
+      - "4001:3000"
+    environment:
+      - PORT=3000
+      - SERVICE_NAME=auth-service
+    networks:
+      - micro-network
+
+  # 2. Catalog Service & Catalog DB
+  catalog-service:
+    build:
+      context: ../services/catalog-service
+      dockerfile: ../../docker/Dockerfile.multistage
+    ports:
+      - "4002:3000"
+    environment:
+      - PORT=3000
+      - SERVICE_NAME=catalog-service
+    networks:
+      - micro-network
+
+  # 3. Order Service & Order DB
+  order-service:
+    build:
+      context: ../services/order-service
+      dockerfile: ../../docker/Dockerfile.multistage
+    ports:
+      - "4003:3000"
+    environment:
+      - PORT=3000
+      - SERVICE_NAME=order-service
+      - CATALOG_SERVICE_URL=http://catalog-service:3000
+      - PAYMENT_SERVICE_URL=http://payment-service:3000
+    depends_on:
+      - catalog-service
+      - payment-service
+    networks:
+      - micro-network
+
+  # 4. Payment Service & Payment DB
+  payment-service:
+    build:
+      context: ../services/payment-service
+      dockerfile: ../../docker/Dockerfile.multistage
+    ports:
+      - "4004:3000"
+    environment:
+      - PORT=3000
+      - SERVICE_NAME=payment-service
+    networks:
+      - micro-network
+
+networks:
+  micro-network:
+    driver: bridge

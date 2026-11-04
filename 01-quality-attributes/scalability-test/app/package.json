@@ -1,0 +1,12 @@
+{
+  "name": "scalability-demo-app",
+  "version": "1.0.0",
+  "description": "Benchmark target app for scalability testing with Read and Write operations",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
