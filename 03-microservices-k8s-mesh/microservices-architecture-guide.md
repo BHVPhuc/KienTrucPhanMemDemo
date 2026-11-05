@@ -310,3 +310,17 @@ Khi Thầy yêu cầu mở code minh chứng trong buổi thi vấn đáp, bạn
 | **Prometheus Metrics** | [`observability/prometheus.yml`](file:///d:/HCMUS/semester7/software-architecture/midterm/KienTrucPhanMemDemo/03-microservices-k8s-mesh/observability/prometheus.yml) | Cấu hình cào dữ liệu (scrape job) định kỳ 5s từ các microservices. |
 | **Grafana Dashboard** | [`observability/grafana-dashboard.json`](file:///d:/HCMUS/semester7/software-architecture/midterm/KienTrucPhanMemDemo/03-microservices-k8s-mesh/observability/grafana-dashboard.json) | Bảng điều khiển trực quan hóa biểu đồ RED metrics và 4 Golden signals. |
 
+
+---
+
+## 9. Các Công Cụ Tương Đương Thay Thế (Mở Rộng Theo Đề Bài)
+
+Trong trường hợp không sử dụng bộ 5 công cụ chuẩn (**Docker, Kubernetes, Istio, Prometheus, Grafana**), kiến trúc sư có thể thay thế bằng các công nghệ tương đương dưới đây tùy theo quy mô và ràng buộc hạ tầng:
+
+| Tầng Kiến Trúc | Công Cụ Chuẩn Trong Demo | Công Cụ Thay Thế Tương Đương | Phân Tích Đánh Đổi & Khi Nào Nên Lựa Chọn |
+| :--- | :--- | :--- | :--- |
+| **1. Container Runtime** | **Docker** | **Podman**, **containerd**, **CRI-O** | **Podman** hoạt động theo kiến trúc *Daemonless* và *Rootless* (không cần tiến trình ngầm quyền root như Docker daemon), an toàn hơn trên máy chủ Linux. **containerd / CRI-O** là runtime nhẹ chạy trực tiếp dưới Kubernetes mà không cần lớp vỏ Docker CLI. |
+| **2. Orchestration** | **Kubernetes (K8s)** | **Docker Swarm**, **HashiCorp Nomad**, **AWS ECS** | **Docker Swarm / Docker Compose** phù hợp cho quy mô vừa và nhỏ, cấu hình đơn giản, không tốn hàng GB RAM để nuôi Control Plane như K8s. **HashiCorp Nomad** cho phép điều phối cả ứng dụng container lẫn ứng dụng truyền thống (file binary, Java JAR). |
+| **3. Service Mesh** | **Istio** | **Linkerd**, **Cilium Service Mesh (eBPF)**, **Consul Connect** | **Linkerd** (viết bằng Rust) nhẹ hơn và độ trễ thấp hơn Istio. **Cilium Service Mesh** dùng công nghệ **eBPF** can thiệp trực tiếp dưới Linux Kernel, loại bỏ hoàn toàn việc phải cài đặt Sidecar Proxy trên từng Pod (*Sidecarless Architecture*), tiết kiệm lượng lớn RAM/CPU. |
+| **4. Metrics & TSDB** | **Prometheus** | **VictoriaMetrics**, **InfluxDB**, **Grafana Mimir**, **Datadog** | **VictoriaMetrics** tương thích 100% với ngôn ngữ truy vấn PromQL nhưng tối ưu hóa nén dữ liệu tốt hơn và sử dụng ít RAM hơn Prometheus từ 3–5 lần ở quy mô lớn. |
+| **5. Visualization** | **Grafana** | **Kibana (ELK Stack)**, **Datadog UI**, **New Relic**, **Apache Superset** | **Kibana** đặc biệt mạnh khi hệ thống đã dùng Elasticsearch để lưu trữ Log tập trung, giúp kết hợp tìm kiếm văn bản (Full-text Log Search) và biểu đồ trên một màn hình duy nhất. |
