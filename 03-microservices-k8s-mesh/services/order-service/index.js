@@ -1,8 +1,11 @@
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 
 const PORT = process.env.PORT || 3000;
 const CATALOG_URL = process.env.CATALOG_SERVICE_URL || 'http://localhost:4002';
 const PAYMENT_URL = process.env.PAYMENT_SERVICE_URL || 'http://localhost:4004';
+const DASHBOARD_HTML_PATH = path.join(__dirname, 'dashboard.html');
 
 const orders = [];
 
@@ -46,6 +49,29 @@ function httpRequestJson(url, method = 'GET', bodyObj = null) {
 const server = http.createServer((req, res) => {
   const startTime = Date.now();
   redMetrics.requestsTotal++;
+
+  // Phục vụ giao diện Grafana RED Metrics Dashboard trực quan
+  if ((req.url === '/' || req.url === '/dashboard') && req.method === 'GET') {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    if (fs.existsSync(DASHBOARD_HTML_PATH)) {
+      return res.end(fs.readFileSync(DASHBOARD_HTML_PATH, 'utf8'));
+    }
+  }
+
+  // Endpoint xuất dữ liệu JSON cho Dashboard polling
+  if (req.url === '/metrics/json' && req.method === 'GET') {
+    res.setHeader('Content-Type', 'application/json');
+    return res.end(JSON.stringify(redMetrics));
+  }
+
+  // Giả lập lỗi 500 để kiểm thử biểu đồ Error Rate trên Grafana
+  if (req.url === '/simulate-error' && req.method === 'POST') {
+    redMetrics.errorsTotal++;
+    redMetrics.durationMsSum += (Date.now() - startTime);
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json');
+    return res.end(JSON.stringify({ error: 'Internal Server Error (Simulated 500 for RED metrics demo)' }));
+  }
 
   // Endpoint xuất Prometheus RED Metrics
   if (req.url === '/metrics' && req.method === 'GET') {

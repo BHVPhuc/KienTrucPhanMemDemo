@@ -82,13 +82,40 @@ async function runClusterDemo() {
     const metricsRes = await request('http://localhost:4003/metrics', 'GET');
     console.log(metricsRes.text.trim());
 
-  } finally {
+    console.log('\n' + '='.repeat(78));
+    console.log('📊 DASHBOARD GRAFANA & PROMETHEUS RED METRICS ĐÃ SẴN SÀNG TRỰC QUAN!');
+    console.log('='.repeat(78));
+    console.log('👉 Mở Dashboard Grafana (Web UI):  http://localhost:4003/dashboard');
+    console.log('👉 Xem dữ liệu thô Prometheus:     http://localhost:4003/metrics');
+    console.log('👉 Kiểm tra danh mục Đơn hàng:     http://localhost:4003/orders');
+    console.log('\n⚡ Đang tự động giả lập request mua hàng mỗi 2.5s để vẽ đồ thị thời gian thực...');
+    console.log('💡 Bạn có thể mở ngay trình duyệt tại http://localhost:4003/dashboard để xem!');
+    console.log('🛑 Nhấn Ctrl+C để dừng cụm Microservices khi xem xong.');
+    console.log('='.repeat(78));
+
+    // Vòng lặp gửi traffic liên tục để dashboard có dữ liệu động
+    const trafficTimer = setInterval(async () => {
+      try {
+        await request('http://localhost:4003/orders', 'POST', { productId: 'p1', quantity: 1 });
+      } catch (e) {}
+    }, 2500);
+
+    const cleanup = () => {
+      clearInterval(trafficTimer);
+      procs.forEach(p => p.kill());
+      process.exit(0);
+    };
+
+    process.on('SIGINT', cleanup);
+    process.on('SIGTERM', cleanup);
+
+    // Giữ tiến trình sống để phục vụ Dashboard
+    await new Promise(() => {});
+
+  } catch (err) {
+    console.error('Lỗi cụm microservices:', err);
     procs.forEach(p => p.kill());
   }
-
-  console.log('='.repeat(78));
-  console.log('✅ HOÀN TẤT KIỂM THỬ CỤM MICROSERVICES & PROMETHEUS RED METRICS.');
-  console.log('='.repeat(78));
 }
 
 runClusterDemo();

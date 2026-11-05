@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grafana RED Metrics Dashboard | Prometheus Observability</title>
+  <style>
+    :root {
+      --bg-primary: #111217;
+      --bg-panel: #181b1f;
+      --bg-card: #22252b;
+      --border: #2c323d;
+      --accent-orange: #ff7800;
+      --accent-blue: #3274d9;
+      --accent-green: #56a64b;
+      --accent-red: #e02f44;
+      --text-main: #e9edf2;
+      --text-muted: #8e9bb0;
+      --font-mono: Consolas, 'Courier New', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-primary);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      padding: 20px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #ff7800, #f05a28);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 18px;
+      color: #fff;
+    }
+    .brand-text h1 { font-size: 18px; font-weight: 600; }
+    .brand-text p { font-size: 12px; color: var(--text-muted); }
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(86, 166, 75, 0.15);
+      border: 1px solid var(--accent-green);
+      color: #73bf69;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent-green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent-green);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
+
+    /* Controls Bar */
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    button {
+      background: var(--bg-panel);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      padding: 9px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    button:hover { background: #22252c; border-color: var(--accent-blue); }
+    button.btn-primary { background: #1f60c4; border-color: #3274d9; color: #fff; }
+    button.btn-primary:hover { background: #2f7cf6; }
+    button.btn-danger { background: rgba(224, 47, 68, 0.2); border-color: var(--accent-red); color: #ff7383; }
+    button.btn-danger:hover { background: rgba(224, 47, 68, 0.35); }
+    .auto-gen-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+
+    /* KPI Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 3px;
+    }
+    .kpi-card.rate::before { background: var(--accent-blue); }
+    .kpi-card.error::before { background: var(--accent-red); }
+    .kpi-card.duration::before { background: var(--accent-orange); }
+    .kpi-card.health::before { background: var(--accent-green); }
+    .kpi-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px; }
+    .kpi-value { font-size: 28px; font-weight: 700; color: #fff; font-family: var(--font-mono); }
+    .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+    /* Chart Panels */
+    .panels-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .panel-header h2 { font-size: 14px; font-weight: 600; }
+    .panel-tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-family: var(--font-mono); background: #22252c; color: var(--text-muted); }
+    canvas { width: 100% !important; height: 160px !important; display: block; }
+
+    /* Prometheus Raw Stream */
+    .raw-section {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .raw-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .raw-header h3 { font-size: 13px; font-weight: 600; color: var(--accent-orange); }
+    pre {
+      background: #0d0f12;
+      border: 1px solid #1e2229;
+      border-radius: 6px;
+      padding: 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #9cdcfe;
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+    a { color: var(--accent-blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-logo">G</div>
+      <div class="brand-text">
+        <h1>Grafana RED Metrics Live Dashboard</h1>
+        <p>Hệ thống giám sát Microservices qua Prometheus Scrape • Service: <code>order-service</code></p>
+      </div>
+    </div>
+    <div class="status-badge">
+      <div class="pulse-dot"></div>
+      <span>PROMETHEUS SCRAPING: 2s INTERVAL</span>
+    </div>
+  </header>
+
+  <div class="controls">
+    <button class="btn-primary" onclick="triggerOrder()">⚡ Bắn 1 Đơn Hàng (POST /orders)</button>
+    <button onclick="triggerBatchOrders(5)">🚀 Bắn 5 Đơn Hàng Đồng Thời</button>
+    <button class="btn-danger" onclick="triggerSimulatedError()">💣 Giả Lập Lỗi 500 (Simulate Error)</button>
+    <div class="auto-gen-label">
+      <input type="checkbox" id="autoTrafficToggle" checked onchange="toggleAutoTraffic(this.checked)">
+      <label for="autoTrafficToggle">Tự động bắn tải định kỳ 2.5s</label>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card rate">
+      <div class="kpi-title">R - Request Rate (Total)</div>
+      <div class="kpi-value" id="kpiRate">0</div>
+      <div class="kpi-sub">Tổng số yêu cầu HTTP tiếp nhận</div>
+    </div>
+    <div class="kpi-card error">
+      <div class="kpi-title">E - Error Rate (HTTP 5xx)</div>
+      <div class="kpi-value" id="kpiError">0%</div>
+      <div class="kpi-sub" id="kpiErrorCount">0 lỗi / 0 requests</div>
+    </div>
+    <div class="kpi-card duration">
+      <div class="kpi-title">D - Avg Latency (Duration)</div>
+      <div class="kpi-value" id="kpiDuration">0 ms</div>
+      <div class="kpi-sub">Độ trễ trung bình trên mỗi request</div>
+    </div>
+    <div class="kpi-card health">
+      <div class="kpi-title">Cluster Status</div>
+      <div class="kpi-value" style="color: #73bf69; font-size: 20px;">HEALTHY</div>
+      <div class="kpi-sub">4 Services Active (Auth, Cat, Ord, Pay)</div>
+    </div>
+  </div>
+
+  <div class="panels-grid">
+    <div class="panel">
+      <div class="panel-header">
+        <h2>R - Rate: Lưu lượng Request (Requests/min)</h2>
+        <span class="panel-tag">rate(http_requests_total[1m])</span>
+      </div>
+      <canvas id="chartRate"></canvas>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h2>E - Errors: Tỷ lệ Lỗi HTTP 5xx (%)</h2>
+        <span class="panel-tag">http_request_errors_total</span>
+      </div>
+      <canvas id="chartError"></canvas>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h2>D - Duration: Độ Trễ Xử Lý (ms)</h2>
+        <span class="panel-tag">http_request_duration_ms_sum</span>
+      </div>
+      <canvas id="chartDuration"></canvas>
+    </div>
+  </div>
+
+  <div class="raw-section">
+    <div class="raw-header">
+      <h3>📄 Dữ Liệu Thu Thập Chuẩn Prometheus Scraper (/metrics)</h3>
+      <a href="/metrics" target="_blank">Mở trực tiếp /metrics ↗</a>
+    </div>
+    <pre id="rawMetrics">Đang kết nối Prometheus scraper...</pre>
+  </div>
+
+  <script>
+    const MAX_POINTS = 20;
+    const history = {
+      labels: [],
+      rate: [],
+      error: [],
+      duration: []
+    };
+
+    let lastTotal = 0;
+    let autoInterval = null;
+
+    function drawChart(canvasId, dataPoints, strokeColor, fillColor, unit = '') {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      
+      const width = canvas.parentElement.clientWidth - 32;
+      const height = 160;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      ctx.scale(dpr, dpr);
+
+      ctx.clearRect(0, 0, width, height);
+
+      // Grid
+      ctx.strokeStyle = '#22262e';
+      ctx.lineWidth = 1;
+      for (let y = 20; y < height - 20; y += 30) {
+        ctx.beginPath();
+        ctx.moveTo(35, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+
+      if (dataPoints.length < 2) return;
+
+      const maxVal = Math.max(...dataPoints, 5);
+      const minVal = 0;
+
+      const getX = (idx) => 40 + (idx / (MAX_POINTS - 1)) * (width - 50);
+      const getY = (val) => (height - 30) - ((val - minVal) / (maxVal - minVal || 1)) * (height - 50);
+
+      // Gradient Fill
+      const grad = ctx.createLinearGradient(0, 0, 0, height);
+      grad.addColorStop(0, fillColor);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+      ctx.beginPath();
+      ctx.moveTo(getX(0), getY(dataPoints[0]));
+      for (let i = 1; i < dataPoints.length; i++) {
+        ctx.lineTo(getX(i), getY(dataPoints[i]));
+      }
+      ctx.lineTo(getX(dataPoints.length - 1), height - 25);
+      ctx.lineTo(getX(0), height - 25);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Stroke Line
+      ctx.beginPath();
+      ctx.moveTo(getX(0), getY(dataPoints[0]));
+      for (let i = 1; i < dataPoints.length; i++) {
+        ctx.lineTo(getX(i), getY(dataPoints[i]));
+      }
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Value label on latest
+      const lastX = getX(dataPoints.length - 1);
+      const lastY = getY(dataPoints[dataPoints.length - 1]);
+      ctx.fillStyle = '#fff';
+      ctx.font = '11px monospace';
+      ctx.fillText(dataPoints[dataPoints.length - 1] + unit, lastX - 25, lastY - 8);
+
+      // Axis label
+      ctx.fillStyle = '#7a869a';
+      ctx.fillText(maxVal.toFixed(0) + unit, 5, 25);
+      ctx.fillText('0', 15, height - 26);
+    }
+
+    async function pollMetrics() {
+      try {
+        const [jsonRes, rawRes] = await Promise.all([
+          fetch('/metrics/json').then(r => r.json()),
+          fetch('/metrics').then(r => r.text())
+        ]);
+
+        document.getElementById('rawMetrics').textContent = rawRes.trim();
+
+        const totalReq = jsonRes.requestsTotal || 0;
+        const totalErr = jsonRes.errorsTotal || 0;
+        const durationSum = jsonRes.durationMsSum || 0;
+
+        const deltaReq = lastTotal === 0 ? 0 : Math.max(0, totalReq - lastTotal);
+        lastTotal = totalReq;
+
+        const errPercent = totalReq > 0 ? ((totalErr / totalReq) * 100).toFixed(1) : 0;
+        const avgDuration = totalReq > 0 ? (durationSum / totalReq).toFixed(1) : 0;
+
+        document.getElementById('kpiRate').textContent = totalReq;
+        document.getElementById('kpiError').textContent = errPercent + '%';
+        document.getElementById('kpiErrorCount').textContent = `${totalErr} lỗi / ${totalReq} requests`;
+        document.getElementById('kpiDuration').textContent = avgDuration + ' ms';
+
+        // Add history point
+        const now = new Date().toLocaleTimeString();
+        history.labels.push(now);
+        history.rate.push(deltaReq * 30); // QPM equivalent
+        history.error.push(parseFloat(errPercent));
+        history.duration.push(parseFloat(avgDuration));
+
+        if (history.labels.length > MAX_POINTS) {
+          history.labels.shift();
+          history.rate.shift();
+          history.error.shift();
+          history.duration.shift();
+        }
+
+        drawChart('chartRate', history.rate, '#3274d9', 'rgba(50, 116, 217, 0.25)');
+        drawChart('chartError', history.error, '#e02f44', 'rgba(224, 47, 68, 0.25)', '%');
+        drawChart('chartDuration', history.duration, '#ff7800', 'rgba(255, 120, 0, 0.25)', 'ms');
+
+      } catch (err) {
+        console.error('Lỗi poll metrics:', err);
+      }
+    }
+
+    async function triggerOrder() {
+      try {
+        await fetch('/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productId: 'p1', quantity: 1 })
+        });
+        pollMetrics();
+      } catch (e) { console.error(e); }
+    }
+
+    async function triggerBatchOrders(n) {
+      for (let i = 0; i < n; i++) {
+        triggerOrder();
+      }
+    }
+
+    async function triggerSimulatedError() {
+      try {
+        await fetch('/simulate-error', { method: 'POST' });
+        pollMetrics();
+      } catch (e) { console.error(e); }
+    }
+
+    function toggleAutoTraffic(enable) {
+      if (enable) {
+        if (!autoInterval) {
+          autoInterval = setInterval(() => triggerOrder(), 2500);
+        }
+      } else {
+        clearInterval(autoInterval);
+        autoInterval = null;
+      }
+    }
+
+    // Start polling & auto traffic
+    pollMetrics();
+    setInterval(pollMetrics, 1500);
+    toggleAutoTraffic(true);
+  </script>
+</body>
+</html>
+
