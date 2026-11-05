@@ -17,3 +17,4 @@ globs: ["**/*"]
 3. **Mục tiêu vấn đáp & hiểu bản chất:**
    - Hiểu rõ đường đi gói tin mạng, cổng giao tiếp, luồng dữ liệu dưới tầng OS/Network.
    - Thuyết minh dựa trên Thuộc tính chất lượng (Quality Attributes) & Đánh đổi kiến trúc (Trade-offs).
+

@@ -29,3 +29,4 @@ Tài liệu này định nghĩa các quy tắc và ràng buộc bất di bất d
 ## 3. MỤC TIÊU HỌC THUẬT & PHỤC VỤ VẤN ĐÁP (ACADEMIC RIGOR)
 - Người học cần hiểu sâu bản chất kỹ thuật (under the hood) để tự tin giải thích từng thành phần, từng cổng mạng, từng gói tin khi Thầy hỏi thi.
 - Luôn cung cấp sơ đồ Mermaid chuẩn hóa (Sequence Diagram, Architecture Flowchart) và phân tích đánh đổi thuộc tính chất lượng (Trade-offs: Performance vs Consistency, Scalability vs Complexity).
+
