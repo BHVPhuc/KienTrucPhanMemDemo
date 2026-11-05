@@ -6,3 +6,6 @@
 	path = 04-micro-frontends-jamstack/jamstack/ScriptHammer
 	url = https://github.com/TortoiseWolfe/ScriptHammer.git
 
+[submodule "02-architecture-representation/metis"]
+	path = 02-architecture-representation/metis
+	url = https://github.com/arm/metis.git
